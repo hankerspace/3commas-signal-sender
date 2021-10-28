@@ -8,6 +8,8 @@ bot:
         secret-key: changeInCustomProfile
         access-key: changeInCustomProfile
 
+    excluded-pairs: EUR,RUB,GBP,BUSD,USDC,TUSD,UAH,BIDR,SUSD,USDP,NGN,DAI,AUD,IDRT,PAXG
+
     test-mode: 1 # 0 : no test / 1 : test mode / 2 : simulated test mode (x60 speed)
     send-signals: true
     allow-lever-positions: false
@@ -22,4 +24,6 @@ bot:
     coin-market-cap:
         api-key: changeInCustomProfile
 
-
+logging:
+    level:
+        root: INFO

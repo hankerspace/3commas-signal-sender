@@ -1,15 +1,10 @@
 package com.isaratech.signalsender.service.bot
 
-import com.binance.api.client.domain.OrderStatus
-import com.binance.api.client.domain.account.Order
 import com.binance.api.client.domain.market.TickerPrice
-import com.binance.api.client.exception.BinanceApiException
-import com.isaratech.signalsender.service.PortfolioService
 import com.isaratech.signalsender.service.PriceService
 import com.isaratech.signalsender.service.analysis.StrategyAnalysisFactory
 import com.isaratech.signalsender.service.bot.SelectedStrategyType.strategyType
 import com.isaratech.signalsender.service.exchange.ExchangeService
-import com.isaratech.signalsender.utils.Utils
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -19,11 +14,8 @@ import org.springframework.stereotype.Service
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
-import java.math.BigDecimal
-import java.math.RoundingMode
 import java.net.HttpURLConnection
 import java.net.URL
-import java.time.LocalDateTime
 
 @Service
 @EnableScheduling
@@ -42,47 +34,43 @@ class BuyerService(@Autowired private val priceService: PriceService,
     @Value("\${bot.test-mode}")
     private val testMode: Int = 0
 
+    @Value("#{'\${bot.excluded-pairs}'.split(',')}")
+    private val excludedPairs: Array<String> = emptyArray()
+
     @Value("\${bot.allow-lever-positions}")
     private val allowLeverPositions: Boolean = false
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
-    private var loopCount = 0
-
-    @Scheduled(fixedDelay = 1000) // Every 2 minutes
+    @Scheduled(fixedDelay = 120000) // Every 2 minutes
     fun lookForBuySignals() {
-        if(loopCount % 60 == 0 || testMode == 2) { // 60 seconds if not test mode. 1 second if test mode
+        log.debug("-- Looking for buy signal :")
+        priceService.getAllLatestsPrices()?.forEach {
+            try {
+                if (exchangeService.isMarketOpen(it.symbol)  // Market open
+                    && it.symbol.contains(basePair)  // Base pair
+                    && !isExcludedTicker(it.symbol) // Excluded pairs
+                    && (!allowLeverPositions && !(it.symbol.contains("UP") || it.symbol.contains("DOWN"))) // Allow or not lever positions
+                ) {
+                    val analysisService = StrategyAnalysisFactory.getStrategy(it.symbol, strategyType)
+                    //analysisService.purgeTimeSeries()
+                    val buySignal = analysisService.getBuySignal(priceService.getLatestTimeSeries(it.symbol), true)
+                    if (buySignal) {
+                        log.debug("\tBuy signal for : ${it.symbol} at ${it.price}")
 
-            log.debug("-- Looking for buy signal :")
-            priceService.getAllLatestsPrices()?.forEach {
-                try {
-                    // Check it only if we have available space & if this pair is not in open positions & market open
-                    if (exchangeService.isMarketOpen(it.symbol) && it.symbol.contains(basePair)
-                            && (!allowLeverPositions && !(it.symbol.contains("UP") || it.symbol.contains("DOWN"))) // Allow or not lever positions
-                    ) {
-                        val analysisService = StrategyAnalysisFactory.getStrategy(it.symbol, strategyType)
-                        //analysisService.purgeTimeSeries()
-                        val buySignal = analysisService.getBuySignal(priceService.getLatestTimeSeries(it.symbol), true)
-                        if (buySignal) {
-                            log.debug("\tBuy signal for : ${it.symbol} at ${it.price}")
-
-                            sendSignal(it) // Send signal to 3commas
-                        }
+                        sendSignal(it) // Send signal to 3commas
                     }
-                } catch (ex: Exception) {
-                    log.error("Error in lookForBuySignals : " + ex.message)
                 }
+            } catch (ex: Exception) {
+                log.error("Error in lookForBuySignals : " + ex.message)
             }
-            log.debug("--")
         }
-        if(testMode == 2)
-            exchangeService.nextMinute()
-        loopCount++
+        log.debug("--")
     }
 
 
     fun sendSignal(t: TickerPrice) {
-        val webhookUrl = "https://3commas.io/trade_signal/trading_view"
+        val webhookUrl = "https://3commas.io/trade_signal/trading-view"
         val signal = "{  \"message_type\": \"bot\",  \"bot_id\": " + botId + ",  \"email_token\": \"" + emailToken + "\",  \"delay_seconds\": 0,  \"pair\": \"" + basePair + "_" + t.symbol.replace(basePair, "") + "\"}"
         val ret = post(webhookUrl, signal)
         log.info("Sending signal $signal with ret $ret")
@@ -116,6 +104,13 @@ class BuyerService(@Autowired private val priceService: PriceService,
                         response.toString()
                     }
                 }
+    }
+
+    fun isExcludedTicker(pair: String): Boolean {
+        excludedPairs.forEach {
+            if(pair.contains(it)) return true
+        }
+        return false
     }
 
 }
