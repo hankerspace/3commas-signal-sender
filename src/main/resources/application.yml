@@ -1,0 +1,25 @@
+bot:
+    3commas:
+        bot-id: changeInCustomProfile
+        email-token: changeInCustomProfile
+        base-pair: USDT
+    binance:
+        max-precision: 6
+        secret-key: changeInCustomProfile
+        access-key: changeInCustomProfile
+
+    test-mode: 1 # 0 : no test / 1 : test mode / 2 : simulated test mode (x60 speed)
+    send-signals: true
+    allow-lever-positions: false
+
+    max-open-trades: 1000 # -1 use all wallet, anything positive restricts the number of positions
+    max-stake-amount-in-usdt: 50 # 100USDT max / trade
+
+    analysis:
+        time-frame: 10
+        momentum: 0.9
+
+    coin-market-cap:
+        api-key: changeInCustomProfile
+
+
