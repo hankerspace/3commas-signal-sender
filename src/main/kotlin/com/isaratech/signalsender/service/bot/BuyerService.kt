@@ -70,7 +70,7 @@ class BuyerService(@Autowired private val priceService: PriceService,
 
 
     fun sendSignal(t: TickerPrice) {
-        val webhookUrl = "https://3commas.io/trade_signal/trading-view"
+        val webhookUrl = "https://3commas.io/trade_signal/trading_view"
         val signal = "{  \"message_type\": \"bot\",  \"bot_id\": " + botId + ",  \"email_token\": \"" + emailToken + "\",  \"delay_seconds\": 0,  \"pair\": \"" + basePair + "_" + t.symbol.replace(basePair, "") + "\"}"
         val ret = post(webhookUrl, signal)
         log.info("Sending signal $signal with ret $ret")
