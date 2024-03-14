@@ -15,7 +15,6 @@ class StrategyAnalysisFactory {
             val strategyAnalysis = StrategyBasedAnalysisService()
             when (strategyAnalysisType) {
                 StrategyAnalysisType.ADX_STRATEGY -> strategyAnalysis.strategy = ADXStrategy()
-                StrategyAnalysisType.ALEX_STRATEGY -> strategyAnalysis.strategy = AlexStrategy()
                 StrategyAnalysisType.CCI_CORRECTION_STRATEGY -> strategyAnalysis.strategy = CCICorrectionStrategy()
                 StrategyAnalysisType.EMA_STRATEGY -> strategyAnalysis.strategy = EMAStrategy()
                 StrategyAnalysisType.GLOBAL_EXTREMA_STRATEGY -> strategyAnalysis.strategy = GlobalExtremaStrategy()
